@@ -1,4 +1,15 @@
-		
+/*
+    File: page_table.C
+
+    Author: Shalini Priya Ashok Kumar
+			Masters of Science in Computer Science
+            Department of Computer Science
+            Texas A&M University
+    Date  : 05/15/2015
+
+    Description: Management of the Free-Frame Pool.
+
+*/
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
@@ -17,6 +28,20 @@
 #include "frame_pool.H"
 #include "console.H"
 
+   /* Initializes the data structures needed for the management of this
+      frame pool. This function must be called before the paging system
+      is initialized.
+      _base_frame_no is the frame number at the start of the physical memory
+      region that this frame pool manages.
+      _nframes is the number of frames in the physical memory region that this
+      frame pool manages.
+      e.g. If _base_frame_no is 16 and _nframes is 4, this frame pool manages
+      physical frames numbered 16, 17, 18 and 19
+      _info_frame_no is the frame number (within the directly mapped region) of
+      the frame that should be used to store the management information of the
+      frame pool. However, if _info_frame_no is 0, the frame pool is free to
+      choose any frame from the pool to store management information.
+      */
 FramePool::FramePool(unsigned long _base_frame_no,
              unsigned long _nframes,
              unsigned long _info_frame_no) {
@@ -30,26 +55,15 @@ FramePool::FramePool(unsigned long _base_frame_no,
 	//bitmap for kernel frame pool
 	if(info_frame_no==0) {
 		bitmap = (unsigned long *)(KERNEL_START_ADDRESS);
-	/*	Console::putui((int)bitmap);
-		Console::puts("Bitmap\n");*/
 
 		bitmap[0]=1;
 		for (i=1;i<nframes;i++) {
 			bitmap[i]=0;
 		}	
-		/*for (i=0;i<2;i++) {
-			Console::putui(bitmap[i]);
-		}*/	
 	}
 	//bitmap for process frame pool
 	else {
-		//Console::puts("info frame no");
-		//Console::putui(info_frame_no);
-		//Console::puts("frame_size");
-		//Console::putui(FRAME_SIZE);
 		bitmap = (unsigned long *)((info_frame_no)*FRAME_SIZE);
-		Console::putui((int)bitmap);
-		Console::puts("Bitmap\n");
 		
 		for (i=1;i<nframes;i++) {
 			bitmap[i]=0;
@@ -58,30 +72,23 @@ FramePool::FramePool(unsigned long _base_frame_no,
 }
 
 
+   /* Allocates a frame from the frame pool. If successful, returns the frame
+    * number of the frame. If fails, returns 0. */
 unsigned long FramePool::get_frame() {
 
 	int i,j;
-/*	if(info_frame_no==0){	
-	Console::puts("bitmap\n");
-		for (i=0;i<8;i++) {
-			Console::putui(bitmap[i]);
-		}	
-	}*/
 	for (i=0;i<nframes;i++) {
 		if (bitmap[i] == 0) {
 			bitmap[i] = 1;	
-			if(info_frame_no==0){	
-				Console::puts("returning frame :");
-				Console::putui(i);
-				Console::puts("\n");	
-			}
 			return i+base_frame_no;
 		}
 	}
-	Console::puts("returning frame 0\n");
 	return 0;
 }
 
+   /* Mark the area of physical memory as inaccessible. The arguments have the
+    * same semanticas as in the constructor.
+    */
 void FramePool::mark_inaccessible(unsigned long _base_frame_no,
 														 unsigned long _nframes) {
 
@@ -91,6 +98,8 @@ void FramePool::mark_inaccessible(unsigned long _base_frame_no,
 	}
 }
 
+   /* Releases frame back to the given frame pool.
+      The frame is identified by the frame number. */
 void FramePool::release_frame(unsigned long _frame_no) {
 
 	if(bitmap[_frame_no]==1)

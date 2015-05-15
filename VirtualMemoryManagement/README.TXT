@@ -1,4 +1,4 @@
-CSCE 410/611/613: MP2 -- README.TXT
+CPSC 410/611: MP2 -- README.TXT
 
 This file describes the content of this directory.
 A file marked with (*) may be of some interest to the 
@@ -15,7 +15,7 @@ BIOS-bochs-latest	BIOS file.
 VGABIOS-lgpl-latest	BIOS file for the graphics system.
 dev_kernel_grub.img	Image file of the boot floopy.
 bochsrc.bxrc		Description file for the system. (doube-click file to 
-			start emulation).
+			        start emulation).
 
 COMPILATION:
 ===========
@@ -24,10 +24,8 @@ FILE: 			DESCRIPTION:
 
 makefile (**)		Makefile for win32 environment. Type "make" to generate the kernel.
 makefile.linux (**)	Makefile for Linux environment. overwrite makefile with this file
-                        if you are in a Linux environment.
-makefile.linux64 (**)	Makefile for Linux 64-bit  environment. overwrite makefile with this file
-                        if you are in a Linux 64-bit environment.
-linker.ld		the linker script.
+                                if you are in a Linux environemnt.
+linker.ld		        the linker script.
 
 OS COMPONENTS:
 =============
@@ -35,9 +33,9 @@ OS COMPONENTS:
 FILE: 			DESCRIPTION:
 
 start.asm (*)		The bootloader starts code in this file, which in turn
-			jumps to the main entry in File "kernel.C".
+			        jumps to the main entry in File "kernel.C".
 kernel.C (**)		Main file, where the OS components are set up, and the
-                        system gets going.
+                                system gets going.
 
 assert.H/C		Implements the "assert()" utility.
 utils.H/C		Various utilities (e.g. memcpy, strlen, etc..)
@@ -46,11 +44,11 @@ gdt.H/C			Global Descriptor Table.
 gdt_low.asm		Low-level GDT code, included in "start.asm".
 idt.H/C			Interrupt Descriptor Table.
 idt_low.asm		Low-level IDT code, included in "start.asm".
-irq.H/C                 mapping of IRQ's into the IDT.
+irq.H/C                     Re-mapping of IRQ's into the IDT.
 irq_low.asm		Low-level IRQ stuff. (Primarily the interrupt service
-			routines and the routine stub that branches out to the
-		        interrupt dispatcher in "interrupts.C". Included in
-  			"start.asm".
+			        routines and the routine stub that branches out to the
+		           	interrupt dispatcher in "interrupts.C". Included in
+  			        "start.asm".
 exceptions.H/C (*)	The exception dispatcher.
 interrupts.H/C		The interrupt dispatcher.
 
@@ -58,14 +56,8 @@ console.H/C		Routines to print to the screen.
 
 simple_timer.H/C (*)	Routines to control the periodic interval timer.
 
-machine.H/C (*)		Definitions of some system constants and low-level
-			machine operations. (Primarily memory sizes, register set, and
-                        enable/disable interrupts)
-
-machine_low.H/asm       Various low-level x86 specific stuff.
-
 paging_low.H/asm (**)	Low-level code to control the registers needed for 
-			memory paging.
+			        memory paging.
 
 page_table.H (**)	Definition of the page table interface.
 frame_pool.H (**)	Definition of the free frame pool interface.

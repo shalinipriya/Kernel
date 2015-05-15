@@ -4,7 +4,7 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 10/03/25
+    Date  : 09/03/25
 
     Description: Basic Paging.
 
@@ -25,6 +25,7 @@
 
 #include "exceptions.H"
 #include "frame_pool.H"
+#include "paging_low.H"
 
 /*--------------------------------------------------------------------------*/
 /* FORWARDS */
@@ -51,8 +52,8 @@ private:
   unsigned long        * page_directory;     /* where is page directory located? */
 
 public:
-  static const unsigned int PAGE_SIZE        = Machine::PAGE_SIZE; /* in bytes */
-  static const unsigned int ENTRIES_PER_PAGE = Machine::PT_ENTRIES_PER_PAGE; /* in entries, duh! */
+  static const unsigned int PAGE_SIZE        = FramePool::FRAME_SIZE; /* in bytes */
+  static const unsigned int ENTRIES_PER_PAGE = 1024; /* in entries, duh! */
 
   static void init_paging(FramePool * _kernel_mem_pool,
                           FramePool * _process_mem_pool,

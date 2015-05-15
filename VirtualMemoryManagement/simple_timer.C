@@ -26,10 +26,22 @@
 #include "simple_timer.H"
 
 /*--------------------------------------------------------------------------*/
-/* CONSTRUCTOR */
+/* VARIABLES */
 /*--------------------------------------------------------------------------*/
 
-SimpleTimer::SimpleTimer(int _hz) {
+unsigned long SimpleTimer::seconds; 
+int           SimpleTimer::ticks;   /* ticks since last "seconds" update.    */
+
+  /* At what frequency do we update the ticks counter? */
+int           SimpleTimer::hz;      /* Actually, by defaults it is 18.22Hz.
+                                       In this way, a 16-bit counter wraps
+                                       around every hour.                    */
+
+/*--------------------------------------------------------------------------*/
+/* INITIALIZATION OF STATIC VARIABLES */
+/*--------------------------------------------------------------------------*/
+
+void SimpleTimer::init(int _hz) {
   /* How long has the system been running? */
   seconds =  0; 
   ticks   =  0; /* ticks since last "seconds" update.    */
@@ -48,7 +60,7 @@ SimpleTimer::SimpleTimer(int _hz) {
 /*--------------------------------------------------------------------------*/
 
 
-void SimpleTimer::handle_interrupt(REGS *_r) {
+void SimpleTimer::handler(REGS *_r) {
 /* What to do when timer interrupt occurs? In this case, we update "ticks",
    and maybe update "seconds".
    This must be installed as the interrupt handler for the timer in the 

@@ -6,11 +6,6 @@
             Texas A&M University
     Date  : 09/03/19
 
-    This is a simple example of a hardware interrupt handler.
-    As an example, this implements a timer, which in turn 
-    triggers a function to be called at the given frequency.
-    The function is implemented in 'handle_interrupt'.
-
 */
 
 #ifndef _SIMPLE_TIMER_H_
@@ -26,42 +21,45 @@
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
-#include "interrupts.H"
+#include "exceptions.H"
+
+/* Note: The register set data structure REGS is defined in "exceptions.H" */
 
 /*--------------------------------------------------------------------------*/
 /* S I M P L E   T I M E R  */
 /*--------------------------------------------------------------------------*/
 
-class SimpleTimer : public InterruptHandler {
+class SimpleTimer {
 
 private:
 
   /* How long has the system been running? */
-  unsigned long seconds; 
-  int           ticks;   /* ticks since last "seconds" update.    */
+  static unsigned long seconds; 
+  static int           ticks;   /* ticks since last "seconds" update.    */
 
   /* At what frequency do we update the ticks counter? */
-  int hz;                /* Actually, by defaults it is 18.22Hz.
-                            In this way, a 16-bit counter wraps
-                            around every hour.                    */
+  static int hz;                /* Actually, by defaults it is 18.22Hz.
+                                   In this way, a 16-bit counter wraps
+                                   around every hour.                    */
 
-  void set_frequency(int _hz);
+  static void set_frequency(int _hz);
   /* Set the interrupt frequency for the simple timer. */
 
 public :
 
-  SimpleTimer(int _hz);
-  /* Initialize the simple timer, and set its frequency. */
-
-  virtual void handle_interrupt(REGS *_r);
+  static void handler(REGS *_r);
   /* This must be installed as the interrupt handler for the timer 
-     when the system gets initialized. (e.g. in "kernel.C")  
+     when the system gets initialized. (e.g. in "main.C")  
   */
 
-  void current(unsigned long * _seconds, int * _ticks);
+  static void init(int _hz);
+  /* Initialize the simple timer, and set its frequency. Do not install the 
+     timer handler before you have the timer initialized! */
+
+  static void current(unsigned long * _seconds, int * _ticks);
   /* Return the current "time" since the system started. */
 
-  void wait(unsigned long _seconds);
+  static void wait(unsigned long _seconds);
   /* Wait for a particular time to be passed. The implementation is based 
      on busy looping! */
 

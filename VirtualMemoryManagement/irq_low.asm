@@ -127,7 +127,7 @@ _irq15:
     push byte 47
     jmp irq_common_stub
 
-extern _lowlevel_dispatch_interrupt
+extern _dispatch_interrupt
 
 irq_common_stub:
     pusha
@@ -144,7 +144,7 @@ irq_common_stub:
     mov eax, esp
 
     push eax
-    mov eax, _lowlevel_dispatch_interrupt
+    mov eax, _dispatch_interrupt
     call eax
     pop eax
 

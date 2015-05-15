@@ -4,7 +4,7 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/03
+    Date  : 09/03/05
 
     Description: Management of the Free-Frame Pool.
 
@@ -37,12 +37,17 @@
 /*--------------------------------------------------------------------------*/
 
 class FramePool {
-
 private:
      /* -- DEFINE YOUR FRAME POOL DATA STRUCTURE(s) HERE. */
-     
+	unsigned long base_frame_no;
+	unsigned long nframes;
+	unsigned long info_frame_no;
+    unsigned long *bitmap ;	
+
 public:
-  
+   static const unsigned int FRAME_SIZE = 4096;
+   /* Size of a frame in bytes */
+
    FramePool(unsigned long _base_frame_no,
              unsigned long _nframes,
              unsigned long _info_frame_no);
@@ -71,12 +76,8 @@ public:
     * same semanticas as in the constructor.
     */
 
-   static void release_frame(unsigned long _frame_no);
+   void release_frame(unsigned long _frame_no);
    /* Releases frame back to the given frame pool.
-      The frame is identified by the frame number. 
-      NOTE: This function is static because there may be more than one frame pool
-      defined in the system, and it is unclear which one this frame belongs to.
-      This function must first identify the correct frame pool and then call the frame
-      pool's release_frame function. */
+      The frame is identified by the frame number. */
 };
 #endif

@@ -273,7 +273,7 @@ _isr31:
 
 ; The common stub below will pun out into C. Let the 
 ; assembler know that the function is defined in 'exceptions.C'.
-extern _lowlevel_dispatch_exception
+extern _dispatch_exception
 
 ; This is the common low-level stub for the exception handler.
 ; It saves the processor state, sets up for kernel mode
@@ -292,7 +292,7 @@ isr_common_stub:
     mov gs, ax
     mov eax, esp   ; Push us the stack
     push eax
-    mov eax, _lowlevel_dispatch_exception
+    mov eax, _dispatch_exception
     call eax	; A special call, preserves the 'eip' register
     pop eax
     pop gs

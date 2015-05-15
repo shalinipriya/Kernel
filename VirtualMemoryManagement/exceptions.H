@@ -1,23 +1,21 @@
 /* 
-    File: exceptions.h
+    File: exceptions.H
 
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/05
+    Date  : 09/03/05
 
     Description: High-level exception handling. 
 
     CPU exceptions are caught by low-level exception and interrupt 
     handler stubs, which all eventually cause the high-level
-    exception dispatcher to be called (see 'dispatch_exception() below).
+    exception dispatcher to be called (see 'exd_dispatch() below).
 
     The dispatcher then looks up the appropriate exception handler 
-    for the given exception, and calls it. 
-    Specific exception handlers are installed by registering an exception handler
-    object of a class appropriately derived from class 'ExceptionHandler'. The 
-    functionality of the exception handler is then implemented in function
-    'handle_exception(REGS * _regs)'.
+    for the given exception, and calls it. Exception handlers are 
+    installed in form of function pointers. (See definition of 
+    'ExceptionHandler' below.)
     
 
 */
@@ -26,61 +24,69 @@
 #define _exceptions_H_
 
 /*--------------------------------------------------------------------------*/
+/* DEFINES */
+/*--------------------------------------------------------------------------*/
+
+#define EXCEPTION_TABLE_SIZE 32
+
+/*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
 #include "utils.H"
 #include "assert.H"
-#include "machine.H"
 
 /*--------------------------------------------------------------------------*/
-/* E x c e p t i o n H a n d l e r  */
+/* DATA STRUCTURES */ 
 /*--------------------------------------------------------------------------*/
 
-class ExceptionHandler {
+/* This defines what the stack looks like when the exception/interrupt reaches
+   the exception dispatcher. */
+typedef struct regs
+{
+    unsigned int gs, fs, es, ds;
+    unsigned int edi, esi, ebp, esp, ebx, edx, ecx, eax;
+    unsigned int int_no, err_code;
+    unsigned int eip, cs, eflags, useresp, ss;    
+} REGS;
+ 
+/* Exception handlers are functions that take a pointer to a REGS structure 
+   as input and return void. */
+typedef void (* ExceptionHandler)(REGS*);
 
-  private:
+/*--------------------------------------------------------------------------*/
+/* FORWARDS */ 
+/*--------------------------------------------------------------------------*/
 
-  /* The Exception Handler Table */
-  const static int EXCEPTION_TABLE_SIZE = 32;
-  static ExceptionHandler * handler_table[EXCEPTION_TABLE_SIZE];
+/* -- (none) -- */
+
+/*--------------------------------------------------------------------------*/
+/* E x c e p t i o n D i s p a t c h e r  */
+/*--------------------------------------------------------------------------*/
+
   
-  public: 
+/* -- INITIALIZER */
+extern "C" void init_exception_dispatcher();
+/* This function is called to initialize the high-level exception handling. 
+   No high level exception handlers are installed yet. If an exception 
+   occurs at this point, the system displays an error message and 
+   terminates. */
 
-  /* -- POPULATE DISPATCHER TABLE */
 
-  static void register_handler(unsigned int        _isr_code,
-                               ExceptionHandler  * _handler);
-  /* This function allows to install an exception handler for the given 
-     exception code. The handler is a function pointer defined above. 
-     Interrupt handlers are installed as exception handlers as well.
-     The 'register_interrupt' function uses irq2isr to map the IRQ 
-     number to the code. */
+/* -- HANDLE EXCEPTION */
+extern "C" void dispatch_exception(REGS * _r);
+/* This is called (through some detours) by the low-level exception handler.
+   It then looks up the exception code in the register context and calls the
+   the installed high-level exception handler. */
 
-  static void deregister_handler(unsigned int _isr_code);
-
-  /* -- DISPATCHER */
-  static void init_dispatcher();
-  /* This function is called to initialize the high-level exception handling. 
-     No high level exception handlers are installed yet. If an exception 
-     occurs at this point, the system displays an error message and 
-     terminates. */
-
-  static void dispatch_exception(REGS * _r);
-  /* This is the high-level exception dispatcher. It dispatches the exception
-     to the previously registered exception handler. 
-     This function is called by the low-level function 
-     "lowlevel_dispatch_exception(REGS * _r)".*/
-
-  /* -- MANAGE INSTANCES OF EXCEPTION HANDLERS */
-
-  virtual void handle_exception(REGS * _regs) {
-     assert(FALSE); // pure virtual functions dont link correctly.
-  }
-  /* Different exception handlers are derived from the base class ExceptionHandler
-     and their functionality is implemented in this function.*/
-
-};
+/* -- POPULATE EXCEPTION-DISPATCHER TABLE */
+extern "C" void register_exception_handler(unsigned int      _isr_code,
+    	   		  	           ExceptionHandler  _handler);
+/* This function allows to install an exception handler for the given 
+   exception code. The handler is a function pointer defined above. 
+   Interrupt handlers are installed as exception handlers as well.
+   The 'register_interrupt' function uses irq2isr to map the IRQ 
+   number to the code. */
 
 #endif
 

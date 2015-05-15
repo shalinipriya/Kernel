@@ -4,10 +4,10 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/05
+    Date  : 09/03/05
 
 */
- 
+
 /*--------------------------------------------------------------------------*/
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
@@ -69,21 +69,20 @@ extern "C" void isr29();
 extern "C" void isr30();
 extern "C" void isr31();
 
-extern "C" void lowlevel_dispatch_exception(REGS * _r) {
-  ExceptionHandler::dispatch_exception(_r);
-}
 
 /*--------------------------------------------------------------------------*/
-/* STATIC VARIABLES */
+/* LOCAL VARIABLES */
 /*--------------------------------------------------------------------------*/
 
-ExceptionHandler * ExceptionHandler::handler_table[ExceptionHandler::EXCEPTION_TABLE_SIZE];
+static ExceptionHandler handler_table[EXCEPTION_TABLE_SIZE];
+static ExceptionHandler default_handler;
   
 /*--------------------------------------------------------------------------*/
 /* EXPORTED EXCEPTION DISPATCHER FUNCTIONS */
 /*--------------------------------------------------------------------------*/
 
-void ExceptionHandler::init_dispatcher() {
+void init_exception_dispatcher() {
+
 
   /* -- INITIALIZE LOW-LEVEL EXCEPTION HANDLERS */
   /*    Add any new ISRs to the IDT here using IDT::set_gate */
@@ -128,9 +127,12 @@ void ExceptionHandler::init_dispatcher() {
   for(i = 0; i < EXCEPTION_TABLE_SIZE; i++) {
     handler_table[i] = NULL;
   }
+
+  default_handler = NULL;
+
 }
 
-void ExceptionHandler::dispatch_exception(REGS * _r) {
+void dispatch_exception(REGS * _r) {
 
   /* -- EXCEPTION NUMBER */
   unsigned int exc_no = _r->int_no;
@@ -142,22 +144,23 @@ void ExceptionHandler::dispatch_exception(REGS * _r) {
   assert((exc_no >= 0) && (exc_no < EXCEPTION_TABLE_SIZE));
 
   /* -- HAS A HANDLER BEEN REGISTERED FOR THIS EXCEPTION NO? */
-  ExceptionHandler * handler = handler_table[exc_no];
+  ExceptionHandler handler = handler_table[exc_no];
 
   if (!handler) {
-    /* --- NO HANDLER HAS BEEN REGISTERED. SIMPLY RETURN AN ERROR. */
+    /* --- NO DEFAULT HANDLER HAS BEEN REGISTERED. SIMPLY RETURN AN ERROR. */
     Console::puts("NO DEFAULT EXCEPTION HANDLER REGISTERED\n");
     abort();
   }
   else {
     /* -- HANDLE THE EXCEPTION OR INTERRUPT */
-    handler->handle_exception(_r);
+    handler(_r);
   }
 
 }
 
-void ExceptionHandler::register_handler(unsigned int       _isr_code,
-                                        ExceptionHandler * _handler) {
+
+void register_exception_handler(unsigned int      _isr_code,
+			        ExceptionHandler  _handler) {
 
   assert(_isr_code >= 0 && _isr_code < EXCEPTION_TABLE_SIZE);
 
@@ -168,16 +171,4 @@ void ExceptionHandler::register_handler(unsigned int       _isr_code,
   Console::puts("\n");
 
 }
-
-void ExceptionHandler::deregister_handler(unsigned int    _isr_code) {
-  assert(_isr_code >= 0 && _isr_code < EXCEPTION_TABLE_SIZE);
-
-  handler_table[_isr_code] = NULL;
-
-  Console::puts("UNINSTALLED exception handler at ISR "); 
-  Console::putui(_isr_code); 
-  Console::puts("\n");
-
-}
-
 

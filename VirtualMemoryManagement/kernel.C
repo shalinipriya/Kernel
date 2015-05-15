@@ -4,7 +4,7 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/03
+    Date  : 09/03/05
 
 
     This file has the main entry point to the operating system.
@@ -30,25 +30,38 @@
 
 #define FAULT_ADDR (4 MB)
 /* used in the code later as address referenced to cause page faults. */
-#define NACCESS ((1 MB) / 4)
+#define NACCESS ((16 MB) / 4)
+//#define NACCESS 1
 /* NACCESS integer access (i.e. 4 bytes in each access) are made starting at address FAULT_ADDR */
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
 /*--------------------------------------------------------------------------*/
 
-#include "machine.H"     /* LOW-LEVEL STUFF   */
 #include "console.H"
 #include "gdt.H"
-#include "idt.H"          /* LOW-LEVEL EXCEPTION MGMT. */
+#include "idt.H"
 #include "irq.H"
 #include "exceptions.H"
 #include "interrupts.H"
 
-#include "simple_timer.H" /* TIMER MANAGEMENT */
+#include "simple_timer.H"
 
 #include "page_table.H"
 #include "paging_low.H"
+
+
+/*--------------------------------------------------------------------------*/
+/* EXCEPTION HANDLERS */
+/*--------------------------------------------------------------------------*/
+
+/* -- EXAMPLE OF THE DIVISION-BY-ZERO HANDLER */
+
+void dbz_handler(REGS * r) {
+  Console::puts("DIVISION BY ZERO\n");
+  for(;;);
+}
+
 
 /*--------------------------------------------------------------------------*/
 /* MAIN ENTRY INTO THE OS */
@@ -59,26 +72,19 @@ int main() {
     GDT::init();
     Console::init();
     IDT::init();
-    ExceptionHandler::init_dispatcher();
+    init_exception_dispatcher();
     IRQ::init();
-    InterruptHandler::init_dispatcher();
+    init_interrupt_dispatcher();
 
 
     /* -- EXAMPLE OF AN EXCEPTION HANDLER -- */
 
-    class DBZ_Handler : public ExceptionHandler {
-      public:
-      virtual void handle_exception(REGS * _regs) {
-        Console::puts("DIVISION BY ZERO!\n");
-        for(;;);
-      }
-    } dbz_handler;
+    register_exception_handler(0, dbz_handler);
 
-    ExceptionHandler::register_handler(0, &dbz_handler);
+    register_exception_handler(14, PageTable::handle_fault);
 
 
     /* -- INITIALIZE FRAME POOLS -- */
-
     FramePool kernel_mem_pool(KERNEL_POOL_START_FRAME,
                               KERNEL_POOL_SIZE,
                               0);
@@ -89,34 +95,19 @@ int main() {
     process_mem_pool.mark_inaccessible(MEM_HOLE_START_FRAME, MEM_HOLE_SIZE);
 
     /* -- INITIALIZE MEMORY (PAGING) -- */
-
-    /* ---- INSTALL PAGE FAULT HANDLER -- */
-
-    class PageFault_Handler : public ExceptionHandler {
-      public:
-      virtual void handle_exception(REGS * _regs) {
-        PageTable::handle_fault(_regs);
-      }
-    } pagefault_handler;
-
-    ExceptionHandler::register_handler(14, &pagefault_handler);
-    
-    /* ---- INITIALIZE THE PAGE TABLE -- */
-
     PageTable::init_paging(&kernel_mem_pool,
                            &process_mem_pool,
                            4 MB);
 
-    PageTable pt;
+	PageTable pt;
 
     pt.load();
 
     PageTable::enable_paging();
 
     /* -- INITIALIZE THE TIMER (we use a very simple timer).-- */
-    
-    SimpleTimer timer(100); /* timer ticks every 10ms. */
-    InterruptHandler::register_handler(0, &timer);
+    SimpleTimer::init(100); /* timer ticks every 10ms. */
+    register_interrupt_handler(0, SimpleTimer::handler);
 
     /* NOTE: The timer chip starts periodically firing as
              soon as we enable interrupts.
@@ -125,22 +116,20 @@ int main() {
 
     /* -- ENABLE INTERRUPTS -- */
 
-    Machine::enable_interrupts();
+    __asm__ __volatile__ ("sti");
 
     /* -- MOST OF WHAT WE NEED IS SETUP. THE KERNEL CAN START. */
-
     Console::puts("Hello World!\n");
-
     /* -- GENERATE MEMORY REFERENCES */
 
     int *foo = (int *) FAULT_ADDR;
     int i;
 
-    for (i=0; i<NACCESS; i++) {
+	for (i=0; i<NACCESS; i++) {
        foo[i] = i;
     }
-
-    for (i=0; i<NACCESS; i++) {
+    
+	for (i=0; i<NACCESS; i++) {
        if(foo[i] != i) {
           Console::puts("TEST FAILED for access number:");
           Console::putui(i);
@@ -152,9 +141,5 @@ int main() {
        Console::puts("TEST PASSED\n");
     }
 
-    /* -- NOW LOOP FOREVER */
     for(;;);
-
-    /* -- WE DO THE FOLLOWING TO KEEP THE COMPILER HAPPY. */
-    return 1;
 }

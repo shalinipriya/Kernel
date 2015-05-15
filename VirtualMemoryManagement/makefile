@@ -15,17 +15,8 @@ utils.o: utils.C utils.H
 assert.o: assert.C assert.H
 	$(CPP) $(CPP_OPTIONS) -c -o assert.o assert.C
 
-# ==== VARIOUS LOW-LEVEL STUFF =====
-
 gdt.o: gdt.C gdt.H
 	$(CPP) $(CPP_OPTIONS) -c -o gdt.o gdt.C
-
-machine.o: machine.C machine.H
-	$(CPP) $(CPP_OPTIONS) -c -o machine.o machine.C
-
-machine_low.o: machine_low.asm machine_low.H
-	nasm -f aout -o machine_low.o machine_low.asm
-
 
 # ==== EXCEPTIONS AND INTERRUPTS =====
 
@@ -46,6 +37,9 @@ interrupts.o: interrupts.C interrupts.H
 
 console.o: console.C console.H
 	$(CPP) $(CPP_OPTIONS) -c -o console.o console.C
+
+kb.o: kb.C
+	$(CPP) $(CPP_OPTIONS) -c -o kb.o kb.C
 
 simple_timer.o: simple_timer.C simple_timer.H
 	$(CPP) $(CPP_OPTIONS) -c -o simple_timer.o simple_timer.C
@@ -69,9 +63,9 @@ kernel.o: kernel.C console.H simple_timer.H page_table.H
 
 
 kernel.bin: start.o utils.o kernel.o assert.o console.o gdt.o idt.o irq.o exceptions.o interrupts.o \
-   simple_timer.o paging_low.o page_table.o frame_pool.o machine.o machine_low.o
+   simple_timer.o paging_low.o page_table.o frame_pool.o
 	ld -T linker.ld -o kernel.bin start.o utils.o kernel.o assert.o console.o gdt.o idt.o \
    exceptions.o irq.o interrupts.o simple_timer.o  paging_low.o page_table.o \
-   frame_pool.o machine.o machine_low.o
+   frame_pool.o
 	
 	

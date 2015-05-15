@@ -4,7 +4,7 @@
     Author: R. Bettati
             Department of Computer Science
             Texas A&M University
-    Date  : 12/09/05
+    Date  : 09/03/05
 
 */
 
@@ -12,7 +12,8 @@
 /* DEFINES */
 /*--------------------------------------------------------------------------*/
 
-/* (none) */
+#define IRQ_TABLE_SIZE 16
+#define IRQ_BASE       32
 
 /*--------------------------------------------------------------------------*/
 /* INCLUDES */
@@ -38,7 +39,7 @@
    Yes, there are more efficient ways to handle exceptions, but they require more
    code replication.
 */
- 
+
 extern "C" void irq0();
 extern "C" void irq1();
 extern "C" void irq2();
@@ -56,23 +57,28 @@ extern "C" void irq13();
 extern "C" void irq14();
 extern "C" void irq15();
 
-extern "C" void lowlevel_dispatch_interrupt(REGS * _r) {
-  InterruptHandler::dispatch_interrupt(_r);
-}
-
 /*--------------------------------------------------------------------------*/
 /* LOCAL VARIABLES */
 /*--------------------------------------------------------------------------*/
 
-InterruptHandler * InterruptHandler::handler_table[InterruptHandler::IRQ_TABLE_SIZE];
+static ExceptionHandler handler_table[IRQ_TABLE_SIZE];
   
+/*--------------------------------------------------------------------------*/
+/* LOCAL FUNCTIONS */
+/*--------------------------------------------------------------------------*/
+
+static BOOLEAN generated_by_slave_PIC(unsigned int int_no) {
+  return int_no > 7;
+}
+
 /*--------------------------------------------------------------------------*/
 /* EXPORTED INTERRUPT DISPATCHER FUNCTIONS */
 /*--------------------------------------------------------------------------*/
 
-void InterruptHandler::init_dispatcher() {
+void init_interrupt_dispatcher() {
 
-  /* -- INITIALIZE LOW-LEVEL INTERRUPT HANDLERS */
+
+  /* -- INITIALIZE LOW-LEVEL EXCEPTOIN HANDLERS */
   /*    Add any new ISRs to the IDT here using IDT::set_gate */
   IDT::set_gate( 0+ IRQ_BASE, (unsigned) irq0, 0x08, 0x8E);
   IDT::set_gate( 1+ IRQ_BASE, (unsigned) irq1, 0x08, 0x8E);
@@ -92,18 +98,16 @@ void InterruptHandler::init_dispatcher() {
   IDT::set_gate(14+ IRQ_BASE, (unsigned)irq14, 0x08, 0x8E);
   IDT::set_gate(15+ IRQ_BASE, (unsigned)irq15, 0x08, 0x8E);
 
-  /* -- INITIALIZE THE HIGH-LEVEL INTERRUPT HANDLER */
+  
+
+  /* -- INITIALIZE THE HIGH-LEVEL EXCEPTION HANDLER */
   int i;
   for(i = 0; i < IRQ_TABLE_SIZE; i++) {
     handler_table[i] = NULL;
   }
 }
 
-BOOLEAN InterruptHandler::generated_by_slave_PIC(unsigned int int_no) {
-  return int_no > 7;
-}
-
-void InterruptHandler::dispatch_interrupt(REGS * _r) {
+void dispatch_interrupt(REGS * _r) {
 
   /* -- INTERRUPT NUMBER */
   unsigned int int_no = _r->int_no - IRQ_BASE;
@@ -116,7 +120,7 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
 
   /* -- HAS A HANDLER BEEN REGISTERED FOR THIS INTERRUPT NO? */ 
         
-  InterruptHandler * handler = handler_table[int_no];
+  InterruptHandler handler = handler_table[int_no];
 
   if (!handler) {
     /* --- NO DEFAULT HANDLER HAS BEEN REGISTERED. SIMPLY RETURN AN ERROR. */
@@ -124,11 +128,11 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
     Console::puti(int_no);
     Console::puts("\n");
     Console::puts("NO DEFAULT INTERRUPT HANDLER REGISTERED\n");
-    //    abort();
+//    abort();
   }
   else {
     /* -- HANDLE THE INTERRUPT */
-    handler->handle_interrupt(_r);
+    handler(_r);
   }
 
   /* This is an interrupt that was raised by the interrupt controller. We need 
@@ -147,25 +151,14 @@ void InterruptHandler::dispatch_interrupt(REGS * _r) {
     
 }
 
-void InterruptHandler::register_handler(unsigned int        _irq_code,
-		                        InterruptHandler  * _handler) {
+
+void register_interrupt_handler(unsigned int      _irq_code,
+		                   ExceptionHandler  _handler) {
   assert(_irq_code >= 0 && _irq_code < IRQ_TABLE_SIZE);
 
   handler_table[_irq_code] = _handler;
 
   Console::puts("Installed interrupt handler at IRQ "); 
-  Console::putui(_irq_code); 
-  Console::puts("\n");
-
-}
-
-void InterruptHandler::deregister_handler(unsigned int _irq_code) {
-  
-  assert(_irq_code >= 0 && _irq_code < IRQ_TABLE_SIZE);
-
-  handler_table[_irq_code] = NULL;
-
-  Console::puts("UNINSTALLED interrupt handler at IRQ "); 
   Console::putui(_irq_code); 
   Console::puts("\n");
 
